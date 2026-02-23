@@ -419,6 +419,33 @@
         </div>
     </div>
 
+    <!-- Modal Editar Valor Consulta -->
+    <div class="modal-overlay" id="editValueModal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Valor</h2>
+                <button class="modal-close" onclick="closeEditValueModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editValueForm">
+                    <input type="hidden" id="editValueApptId">
+                    <div class="form-group">
+                        <label class="form-label">Novo Valor (R$)</label>
+                        <input type="text" class="form-input" id="newAppointmentValue" placeholder="R$ 0,00" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeEditValueModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveNewValue()">
+                    <i class="fas fa-save"></i> Salvar Valor
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast">
         <div class="toast-icon">

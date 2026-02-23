@@ -13,9 +13,9 @@ let patients = JSON.parse(localStorage.getItem('fisio_patients')) || [];
 let appointments = JSON.parse(localStorage.getItem('fisio_appointments')) || [];
 
 const timeSlots = [
-    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-    '11:00', '11:30', '14:00', '14:30', '15:00', '15:30',
-    '16:00', '16:30', '17:00', '17:30', '18:00'
+    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+    '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
+    '18:00', '19:00', '20:00', '21:00'
 ];
 
 const appointmentTypes = {
@@ -62,10 +62,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('appointmentValue')?.addEventListener('input', e => {
         e.target.value = formatCurrencyInput(e.target.value);
     });
+    document.getElementById('newAppointmentValue')?.addEventListener('input', e => {
+        e.target.value = formatCurrencyInput(e.target.value);
+    });
 
     // Busca no histórico
     document.getElementById('history-search')?.addEventListener('input', e => {
         renderHistory(e.target.value, activeHistoryFilter);
+    });
+
+    document.getElementById('editValueModal')?.addEventListener('click', e => {
+        if (e.target === e.currentTarget) closeEditValueModal();
     });
 
     // Fechar modais ao clicar fora
@@ -280,20 +287,33 @@ function renderHistory(search = '', statusFilter = 'all') {
             const isCancelled = app.status === 'cancelled';
             const borderColor = isCancelled ? 'var(--danger)' : 'var(--success)';
             return `
-                <div class="appointment-item ${isCancelled ? 'cancelled-item' : ''}" data-status="${app.status}">
-                    <div class="appointment-time">
-                        <span class="time-start">${formatDate(app.date)}</span>
-                        <span class="time-end">${app.time}</span>
+                <div class="appointment-item ${isCancelled ? 'cancelled-item' : ''}" data-status="${app.status}" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; width: 100%;">
+                        <div class="appointment-time">
+                            <span class="time-start">${formatDate(app.date)}</span>
+                            <span class="time-end">${app.time}</span>
+                        </div>
+                        <div class="appointment-details">
+                            <div class="patient-name">${patient ? patient.name : 'Paciente removido'}</div>
+                            <div class="appointment-type">${appointmentTypes[app.type] || app.type} ${app.value ? `- <span style="color:var(--success); font-weight:700;">${formatCurrency(app.value)}</span>` : ''}</div>
+                        </div>
                     </div>
-                    <div class="appointment-details">
-                        <div class="patient-name">${patient ? patient.name : 'Paciente removido'}</div>
-                        <div class="appointment-type">${appointmentTypes[app.type] || app.type}</div>
-                    </div>
-                    <div class="appointment-actions">
-                        <span class="status-badge status-${app.status}">
-                            ${isCancelled ? 'Cancelado' : 'Confirmado'}
+                    <div class="appointment-actions" style="display:flex; gap:8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); flex-wrap: wrap;">
+                        <span class="status-badge status-${app.status}" style="margin-right: auto;">
+                            ${isCancelled ? 'Cancelado' : (app.status === 'finished' ? 'Finalizado' : 'Confirmado')}
                         </span>
-                        ${!isCancelled ? `<button class="btn-cancel-appt" onclick="confirmCancelAppointment(${app.id})" title="Cancelar consulta"><i class="fas fa-ban"></i></button>` : ''}
+                        ${(!isCancelled && app.status !== 'finished') ? `
+                            <button class="btn-finish-appt" onclick="finishAppointment(${app.id})" title="Finalizar" style="background:var(--success); color:#fff; border:none; border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;"><i class="fas fa-check"></i> Finalizar</button>
+                            <button class="btn-cancel-appt" onclick="confirmCancelAppointment(${app.id})" title="Cancelar" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;"><i class="fas fa-ban"></i> Cancelar</button>
+                        ` : ''}
+                        ${app.status === 'finished' ? `
+                            <button class="btn-edit-appt" onclick="openEditValueModal(${app.id})" title="Editar Valor" style="background:rgba(52, 152, 219, 0.1); color:var(--primary); border:1px solid var(--primary); border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:600;"><i class="fas fa-edit"></i> Valor</button>
+                            <button class="btn-revert-appt" onclick="revertBilling(${app.id})" title="Reverter Faturamento" style="background:#fff3e0; color:#e65100; border:1px solid #ffb74d; border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:600;"><i class="fas fa-undo"></i> Estornar</button>
+                            <button class="btn-delete-appt" onclick="deleteAppointment(${app.id})" title="Excluir" style="background:#ffebee; color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:600;"><i class="fas fa-trash"></i></button>
+                        ` : ''}
+                        ${isCancelled ? `
+                             <button class="btn-delete-appt" onclick="deleteAppointment(${app.id})" title="Excluir" style="background:#ffebee; color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:600;"><i class="fas fa-trash"></i></button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -376,18 +396,22 @@ function renderTodayAppointments() {
         const p = patients.find(p => p.id == app.patientId);
         const isCancelled = app.status === 'cancelled';
         return `
-            <div class="appointment-item ${isCancelled ? 'cancelled-item' : ''}">
-                <div class="appointment-time">
-                    <span class="time-start">${app.time}</span>
-                    <span class="time-end">${calculateEndTime(app.time)}</span>
+            <div class="appointment-item ${isCancelled ? 'cancelled-item' : ''}" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem; width: 100%;">
+                    <div class="appointment-time">
+                        <span class="time-start">${app.time}</span>
+                        <span class="time-end">${calculateEndTime(app.time)}</span>
+                    </div>
+                    <div class="appointment-details">
+                        <div class="patient-name">${p ? p.name : 'Paciente removido'}</div>
+                        <div class="appointment-type">${appointmentTypes[app.type]}</div>
+                    </div>
                 </div>
-                <div class="appointment-details">
-                    <div class="patient-name">${p ? p.name : 'Paciente removido'}</div>
-                    <div class="appointment-type">${appointmentTypes[app.type]}</div>
-                </div>
-                <div class="appointment-actions">
-                    <span class="status-badge status-${app.status}">${isCancelled ? 'Cancelado' : (app.status === 'confirmed' ? 'Confirmado' : 'Pendente')}</span>
-                    ${!isCancelled ? `<button class="btn-cancel-appt" onclick="confirmCancelAppointment(${app.id})" title="Cancelar consulta"><i class="fas fa-ban"></i></button>` : ''}
+                <div class="appointment-actions" style="display:flex; gap:8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05);">
+                    ${isCancelled ? '<span class="status-badge status-cancelled">Cancelado</span>' : (app.status === 'finished' ? '<span class="status-badge status-finished" style="background:rgba(46, 213, 115, 0.1); color:var(--success);">Finalizado</span>' : `
+                        <button class="btn-finish-appt" onclick="finishAppointment(${app.id})" title="Finalizar" style="background:var(--success); color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; flex:1; justify-content:center;"><i class="fas fa-check"></i> Finalizar</button>
+                        <button class="btn-cancel-appt" onclick="confirmCancelAppointment(${app.id})" title="Cancelar" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; flex:1; justify-content:center;"><i class="fas fa-ban"></i> Cancelar</button>
+                    `)}
                 </div>
             </div>
         `;
@@ -402,17 +426,22 @@ function renderUpcomingAppointments() {
         const p = patients.find(p => p.id == app.patientId);
         const isCancelled = app.status === 'cancelled';
         return `
-            <div class="appointment-item ${isCancelled ? 'cancelled-item' : ''}">
-                <div class="appointment-time">
-                    <span class="time-start">${formatDate(app.date)}</span>
-                    <span class="time-end">${app.time}</span>
+            <div class="appointment-item ${isCancelled ? 'cancelled-item' : ''}" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem; width: 100%;">
+                    <div class="appointment-time">
+                        <span class="time-start">${formatDate(app.date)}</span>
+                        <span class="time-end">${app.time}</span>
+                    </div>
+                    <div class="appointment-details">
+                        <div class="patient-name">${p ? p.name : 'Paciente removido'}</div>
+                        <div class="appointment-type">${appointmentTypes[app.type]}</div>
+                    </div>
                 </div>
-                <div class="appointment-details">
-                    <div class="patient-name">${p ? p.name : 'Paciente removido'}</div>
-                    <div class="appointment-type">${appointmentTypes[app.type]}</div>
-                </div>
-                <div class="appointment-actions">
-                    ${isCancelled ? '<span class="status-badge status-cancelled">Cancelado</span>' : `<button class="btn-cancel-appt" onclick="confirmCancelAppointment(${app.id})" title="Cancelar consulta"><i class="fas fa-ban"></i></button>`}
+                <div class="appointment-actions" style="display:flex; gap:8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05);">
+                    ${isCancelled ? '<span class="status-badge status-cancelled">Cancelado</span>' : (app.status === 'finished' ? '<span class="status-badge status-finished" style="background:rgba(46, 213, 115, 0.1); color:var(--success);">Finalizado</span>' : `
+                        <button class="btn-finish-appt" onclick="finishAppointment(${app.id})" title="Finalizar" style="background:var(--success); color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; flex:1; justify-content:center;"><i class="fas fa-check"></i> Finalizar</button>
+                        <button class="btn-cancel-appt" onclick="confirmCancelAppointment(${app.id})" title="Cancelar" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; flex:1; justify-content:center;"><i class="fas fa-ban"></i> Cancelar</button>
+                    `)}
                 </div>
             </div>
         `;
@@ -432,6 +461,12 @@ function formatDate(dateStr) {
 }
 
 function openModal() {
+    // Definir data mínima como ontem
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    document.getElementById('appointmentDate').setAttribute('min', yesterdayStr);
+
     document.getElementById('appointmentModal').classList.add('active');
     document.body.style.overflow = 'hidden';
 }
@@ -459,6 +494,17 @@ function saveAppointment() {
     const patientId = document.getElementById('patientSelect').value;
     const date = document.getElementById('appointmentDate').value;
     const time = document.getElementById('selectedTime').value;
+
+    // Validação de data (mínimo ontem)
+    const selectedDate = new Date(date + 'T00:00:00');
+    const yesterday = new Date();
+    yesterday.setHours(0, 0, 0, 0);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (selectedDate < yesterday) {
+        return showToast('Não é possível agendar consultas antes de ontem.', 'error');
+    }
+
     const type = document.getElementById('appointmentType').value;
     const valueInput = document.getElementById('appointmentValue').value;
     const category = document.getElementById('appointmentCategory').value;
@@ -508,6 +554,91 @@ function saveAppointment() {
     showToast('Consulta agendada!');
 }
 
+function finishAppointment(id) {
+    const app = appointments.find(a => a.id === id);
+    if (app) {
+        app.status = 'finished';
+        saveData();
+        renderCalendar();
+        renderTodayAppointments();
+        renderUpcomingAppointments();
+        renderHistory();
+        updateStats();
+        showToast('Atendimento finalizado com sucesso!');
+    }
+}
+
+function revertBilling(id) {
+    if (confirm('Deseja reverter o faturamento desta consulta? O status voltará para "Confirmado".')) {
+        const app = appointments.find(a => a.id === id);
+        if (app) {
+            app.status = 'confirmed';
+            saveData();
+            renderCalendar();
+            renderTodayAppointments();
+            renderUpcomingAppointments();
+            renderHistory();
+            updateStats();
+            showToast('Faturamento revertido.');
+        }
+    }
+}
+
+function deleteAppointment(id) {
+    if (confirm('Tem certeza que deseja excluir permanentemente esta consulta?')) {
+        appointments = appointments.filter(a => a.id !== id);
+        saveData();
+        renderCalendar();
+        renderTodayAppointments();
+        renderUpcomingAppointments();
+        renderHistory();
+        updateStats();
+        showToast('Consulta excluída permanentemente.');
+    }
+}
+
+function openEditValueModal(id) {
+    const app = appointments.find(a => a.id === id);
+    if (!app) return;
+
+    const modal = document.getElementById('editValueModal');
+    document.getElementById('editValueApptId').value = id;
+    document.getElementById('newAppointmentValue').value = formatCurrency(app.value || 0);
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEditValueModal() {
+    const modal = document.getElementById('editValueModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+function saveNewValue() {
+    const id = parseInt(document.getElementById('editValueApptId').value);
+    const valueInput = document.getElementById('newAppointmentValue').value;
+
+    const cleanValue = valueInput.replace(/[^\d,]/g, '').replace(',', '.');
+    const value = parseFloat(cleanValue);
+
+    if (isNaN(value) || value < 0) {
+        showToast('Informe um valor válido', 'error');
+        return;
+    }
+
+    const app = appointments.find(a => a.id === id);
+    if (app) {
+        app.value = value;
+        saveData();
+        renderHistory();
+        renderReports(); // Atualiza faturamento imediatamente se estiver na aba
+        showToast('Valor atualizado com sucesso!');
+        closeEditValueModal();
+    }
+}
+
 function updateStats() {
     const today = new Date().toISOString().split('T')[0];
     const todayCount = appointments.filter(a => a.date === today && a.status !== 'cancelled').length;
@@ -515,11 +646,15 @@ function updateStats() {
     const weekStr = weekStart.toISOString().split('T')[0];
     const weekCount = appointments.filter(a => a.date >= weekStr && a.status !== 'cancelled').length;
     const confirmed = appointments.filter(a => a.status === 'confirmed').length;
+    const finished = appointments.filter(a => a.status === 'finished').length;
     const cancelled = appointments.filter(a => a.status === 'cancelled').length;
 
     document.getElementById('today-count').textContent = todayCount;
     document.getElementById('week-count').textContent = weekCount;
-    document.getElementById('confirmed-count').textContent = confirmed;
+    document.getElementById('confirmed-count').textContent = confirmed; // Mantendo count de confirmados agendados
+
+    // Se houver um local para "Finalizados" nos stats, poderíamos usar:
+    // Mas por enquanto, vamos apenas garantir que os cancelados não contem.
     document.getElementById('cancelled-count').textContent = cancelled;
 }
 
@@ -670,17 +805,17 @@ function formatCurrencyInput(value) {
 // ────────────────────────────────────────────────
 
 function renderReports() {
-    const confirmedApps = appointments.filter(a => a.status === 'confirmed');
+    const finishedApps = appointments.filter(a => a.status === 'finished');
 
     // Faturamento Total
-    const totalRevenue = confirmedApps.reduce((acc, app) => acc + (app.value || 0), 0);
+    const totalRevenue = finishedApps.reduce((acc, app) => acc + (app.value || 0), 0);
     document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
 
     // Faturamento Mensal (Mês atual)
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    const monthlyApps = confirmedApps.filter(app => {
+    const monthlyApps = finishedApps.filter(app => {
         const appDate = new Date(app.date);
         return appDate.getMonth() === currentMonth && appDate.getFullYear() === currentYear;
     });
@@ -688,7 +823,7 @@ function renderReports() {
     document.getElementById('monthly-revenue').textContent = formatCurrency(monthlyRevenue);
 
     // Média por Consulta
-    const avgValue = confirmedApps.length ? totalRevenue / confirmedApps.length : 0;
+    const avgValue = finishedApps.length ? totalRevenue / finishedApps.length : 0;
     document.getElementById('average-value').textContent = formatCurrency(avgValue);
 
     // Faturamento por Categoria
@@ -700,7 +835,7 @@ function renderReports() {
         atendsByCategory[cat] = 0;
     });
 
-    confirmedApps.forEach(app => {
+    finishedApps.forEach(app => {
         if (app.category && revenueByCategory.hasOwnProperty(app.category)) {
             revenueByCategory[app.category] += (app.value || 0);
             atendsByCategory[app.category]++;
