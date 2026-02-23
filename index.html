@@ -11,6 +11,33 @@
 
     <!-- Use o nome do seu arquivo CSS -->
     <link rel="stylesheet" href="styles.css/index.css"> <!-- ou styles.css -->
+    <style>
+        .age-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: inline-block !important;
+            margin-top: 2px;
+            line-height: normal;
+        }
+
+        .age-child {
+            background: #e0f2fe !important;
+            color: #0369a1 !important;
+        }
+
+        .age-adult {
+            background: #dcfce7 !important;
+            color: #15803d !important;
+        }
+
+        .age-elderly {
+            background: #fdf2f8 !important;
+            color: #be185d !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -371,7 +398,8 @@
                         <input type="tel" class="form-input" id="patientPhone" placeholder="(31) 99999-9999" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Idade</label>
+                        <label class="form-label">Idade <small id="age-category-preview"
+                                style="margin-left:8px; font-weight:700;"></small></label>
                         <input type="number" class="form-input" id="patientAge" placeholder="Ex: 35" min="0" max="120">
                     </div>
                 </form>

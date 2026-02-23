@@ -32,6 +32,13 @@ const serviceCategories = {
     domicilio: 'Domicílio'
 };
 
+const paymentMethods = {
+    dinheiro: 'Dinheiro',
+    pix: 'Pix',
+    credito: 'Cartão de Crédito',
+    debito: 'Cartão de Débito'
+};
+
 // ────────────────────────────────────────────────
 // Inicialização
 // ────────────────────────────────────────────────
@@ -64,6 +71,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('newAppointmentValue')?.addEventListener('input', e => {
         e.target.value = formatCurrencyInput(e.target.value);
+    });
+
+    // Classificação de idade ao vivo no modal
+    document.getElementById('patientAge')?.addEventListener('input', e => {
+        const preview = document.getElementById('age-category-preview');
+        const age = e.target.value;
+        if (preview) {
+            const cat = getAgeCategory(age ? parseInt(age) : null);
+            if (cat) {
+                preview.textContent = `(${cat.label})`;
+                preview.style.color = (cat.class === 'age-child') ? '#0369a1' : (cat.class === 'age-adult' ? '#15803d' : '#be185d');
+            } else {
+                preview.textContent = '';
+            }
+        }
     });
 
     // Busca no histórico
@@ -110,6 +132,18 @@ function openPatientModal(editId = null) {
             document.getElementById('patientAge').value = patient.age || '';
             document.getElementById('editPatientId').value = patient.id;
 
+            // Atualizar preview de idade
+            const preview = document.getElementById('age-category-preview');
+            if (preview) {
+                const cat = getAgeCategory(patient.age);
+                if (cat) {
+                    preview.textContent = `(${cat.label})`;
+                    preview.style.color = (cat.class === 'age-child') ? '#0369a1' : (cat.class === 'age-adult' ? '#15803d' : '#be185d');
+                } else {
+                    preview.textContent = '';
+                }
+            }
+
             // Mostrar botão de excluir
             const delBtn = document.getElementById('btn-delete-patient');
             if (delBtn) delBtn.style.display = 'inline-flex';
@@ -119,9 +153,12 @@ function openPatientModal(editId = null) {
         document.getElementById('patientForm').reset();
         document.getElementById('editPatientId').value = '';
 
-        // Esconder botão de excluir
+        // Esconder botão de excluir e limpar preview de idade
         const delBtn = document.getElementById('btn-delete-patient');
         if (delBtn) delBtn.style.display = 'none';
+
+        const preview = document.getElementById('age-category-preview');
+        if (preview) preview.textContent = '';
     }
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -171,6 +208,9 @@ function savePatient() {
     saveData(); // Persiste no banco local
     renderPatientList();
     renderPatientSelect();
+    renderTodayAppointments();
+    renderUpcomingAppointments();
+    renderHistory();
     closePatientModal();
 }
 
@@ -187,6 +227,22 @@ function deletePatient(id) {
 // Render Pacientes
 // ────────────────────────────────────────────────
 
+function getAgeCategory(age) {
+    if (age === null || age === undefined || age === '') return null;
+    const n = Number(age);
+    if (isNaN(n)) return null;
+    if (n <= 12) return { label: 'Criança', class: 'age-child' };
+    if (n <= 59) return { label: 'Adulto', class: 'age-adult' };
+    return { label: 'Idoso', class: 'age-elderly' };
+}
+
+function getAgeBadge(age) {
+    const cat = getAgeCategory(age);
+    if (!cat) return '';
+    // Estilos inline para garantir visibilidade inicial
+    return `<span class="age-badge ${cat.class}" style="margin-left:8px; vertical-align:middle; display:inline-block !important;">${cat.label}</span>`;
+}
+
 function renderPatientList(search = '') {
     const container = document.getElementById('patient-list');
     if (!container) return;
@@ -200,7 +256,10 @@ function renderPatientList(search = '') {
         <div class="patient-item">
             <div class="patient-avatar">${p.name.split(' ').map(n => n[0]).join('').substring(0, 2)}</div>
             <div class="patient-info">
-                <div class="patient-name-text">${p.name}</div>
+                <div class="patient-name-text">
+                    ${p.name} 
+                    ${getAgeBadge(p.age)}
+                </div>
                 <div class="patient-phone-text">${p.phone}</div>
             </div>
             <div class="patient-age-box">
@@ -285,6 +344,7 @@ function renderHistory(search = '', statusFilter = 'all') {
         : filtered.map(app => {
             const patient = patients.find(p => p.id == app.patientId);
             const isCancelled = app.status === 'cancelled';
+            const ageCat = patient ? getAgeCategory(patient.age) : null;
             const borderColor = isCancelled ? 'var(--danger)' : 'var(--success)';
             return `
                 <div class="appointment-item ${isCancelled ? 'cancelled-item' : ''}" data-status="${app.status}" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1rem;">
@@ -294,7 +354,10 @@ function renderHistory(search = '', statusFilter = 'all') {
                             <span class="time-end">${app.time}</span>
                         </div>
                         <div class="appointment-details">
-                            <div class="patient-name">${patient ? patient.name : 'Paciente removido'}</div>
+                            <div class="patient-name">
+                                ${patient ? patient.name : 'Paciente removido'}
+                                ${getAgeBadge(patient ? patient.age : null)}
+                            </div>
                             <div class="appointment-type">
                                 ${appointmentTypes[app.type] || app.type} 
                                 ${app.payment ? `<small style="background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:4px;">${paymentMethods[app.payment] || app.payment}</small>` : ''}
@@ -302,21 +365,21 @@ function renderHistory(search = '', statusFilter = 'all') {
                             </div>
                         </div>
                     </div>
-                    <div class="appointment-actions" style="display:flex; gap:8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); flex-wrap: wrap;">
-                        <span class="status-badge status-${app.status}" style="margin-right: auto;">
+                    <div class="appointment-actions">
+                        <span class="status-badge status-${app.status}" style="margin-right: auto; padding: 4px 12px; font-size: 0.75rem;">
                             ${isCancelled ? 'Cancelado' : (app.status === 'finished' ? 'Finalizado' : 'Confirmado')}
                         </span>
                         ${(!isCancelled && app.status !== 'finished') ? `
-                            <button class="btn-finish-appt" onclick="finishAppointment(${app.id})" title="Finalizar" style="background:var(--success); color:#fff; border:none; border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;"><i class="fas fa-check"></i> Finalizar</button>
-                            <button class="btn-cancel-appt" onclick="confirmCancelAppointment(${app.id})" title="Cancelar" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; white-space:nowrap;"><i class="fas fa-ban"></i> Cancelar</button>
+                            <button class="btn-appt btn-appt-finish" onclick="finishAppointment(${app.id})" title="Finalizar"><i class="fas fa-check"></i> Finalizar</button>
+                            <button class="btn-appt btn-appt-cancel" onclick="confirmCancelAppointment(${app.id})" title="Cancelar"><i class="fas fa-ban"></i> Cancelar</button>
                         ` : ''}
                         ${app.status === 'finished' ? `
-                            <button class="btn-edit-appt" onclick="openEditValueModal(${app.id})" title="Editar Valor" style="background:rgba(52, 152, 219, 0.1); color:var(--primary); border:1px solid var(--primary); border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:600;"><i class="fas fa-edit"></i> Valor</button>
-                            <button class="btn-revert-appt" onclick="revertBilling(${app.id})" title="Reverter Faturamento" style="background:#fff3e0; color:#e65100; border:1px solid #ffb74d; border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:600;"><i class="fas fa-undo"></i> Estornar</button>
-                            <button class="btn-delete-appt" onclick="deleteAppointment(${app.id})" title="Excluir" style="background:#ffebee; color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:600;"><i class="fas fa-trash"></i></button>
+                            <button class="btn-appt btn-appt-cancel" onclick="openEditValueModal(${app.id})" title="Editar Valor" style="background:rgba(52, 152, 219, 0.1); color:var(--primary); border-color:var(--primary); min-width:80px;"><i class="fas fa-edit"></i> Valor</button>
+                            <button class="btn-appt" onclick="revertBilling(${app.id})" title="Reverter Faturamento" style="background:#fff3e0; color:#e65100; border:1px solid #ffb74d; min-width:90px;"><i class="fas fa-undo"></i> Estornar</button>
+                            <button class="btn-appt btn-appt-cancel btn-appt-icon" onclick="deleteAppointment(${app.id})" title="Excluir"><i class="fas fa-trash"></i></button>
                         ` : ''}
                         ${isCancelled ? `
-                             <button class="btn-delete-appt" onclick="deleteAppointment(${app.id})" title="Excluir" style="background:#ffebee; color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:600;"><i class="fas fa-trash"></i></button>
+                             <button class="btn-appt btn-appt-cancel btn-appt-icon" onclick="deleteAppointment(${app.id})" title="Excluir"><i class="fas fa-trash"></i></button>
                         ` : ''}
                     </div>
                 </div>
@@ -348,8 +411,18 @@ function renderCalendar() {
     const dayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     dayHeaders.forEach(day => html += `<div class="calendar-day-header">${day}</div>`);
 
+    // Dias do mês anterior
     for (let i = startingDay - 1; i >= 0; i--) {
-        html += `<div class="calendar-day other-month"><div class="day-number">${prevDays - i}</div></div>`;
+        const d = new Date(year, month, -i);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayApps = appointments.filter(a => a.date === dateStr);
+        let dots = '';
+        dayApps.forEach(a => dots += `<div class="appointment-dot ${a.status}"></div>`);
+
+        html += `<div class="calendar-day other-month" onclick="selectDate('${dateStr}')">
+            <div class="day-number">${d.getDate()}</div>
+            <div class="day-appointments">${dots}</div>
+        </div>`;
     }
 
     const today = new Date();
@@ -367,9 +440,19 @@ function renderCalendar() {
         </div>`;
     }
 
+    // Dias do próximo mês
     const remaining = 42 - (startingDay + daysInMonth);
     for (let i = 1; i <= remaining; i++) {
-        html += `<div class="calendar-day other-month"><div class="day-number">${i}</div></div>`;
+        const d = new Date(year, month + 1, i);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayApps = appointments.filter(a => a.date === dateStr);
+        let dots = '';
+        dayApps.forEach(a => dots += `<div class="appointment-dot ${a.status}"></div>`);
+
+        html += `<div class="calendar-day other-month" onclick="selectDate('${dateStr}')">
+            <div class="day-number">${d.getDate()}</div>
+            <div class="day-appointments">${dots}</div>
+        </div>`;
     }
 
     document.getElementById('calendar').innerHTML = html;
@@ -377,6 +460,11 @@ function renderCalendar() {
 
 function changeMonth(delta) {
     currentDate.setMonth(currentDate.getMonth() + delta);
+    renderCalendar();
+}
+
+function changeYear(delta) {
+    currentDate.setFullYear(currentDate.getFullYear() + delta);
     renderCalendar();
 }
 
@@ -399,6 +487,7 @@ function renderTodayAppointments() {
     document.getElementById('today-appointments').innerHTML = todayApps.map(app => {
         const p = patients.find(p => p.id == app.patientId);
         const isCancelled = app.status === 'cancelled';
+        const ageCat = p ? getAgeCategory(p.age) : null;
         return `
             <div class="appointment-item ${isCancelled ? 'cancelled-item' : ''}" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1rem;">
                 <div style="display: flex; align-items: center; gap: 1rem; width: 100%;">
@@ -407,14 +496,17 @@ function renderTodayAppointments() {
                         <span class="time-end">${calculateEndTime(app.time)}</span>
                     </div>
                     <div class="appointment-details">
-                        <div class="patient-name">${p ? p.name : 'Paciente removido'}</div>
+                        <div class="patient-name">
+                            ${p ? p.name : 'Paciente removido'}
+                            ${getAgeBadge(p ? p.age : null)}
+                        </div>
                         <div class="appointment-type">${appointmentTypes[app.type]}</div>
                     </div>
                 </div>
-                <div class="appointment-actions" style="display:flex; gap:8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05);">
+                <div class="appointment-actions">
                     ${isCancelled ? '<span class="status-badge status-cancelled">Cancelado</span>' : (app.status === 'finished' ? '<span class="status-badge status-finished" style="background:rgba(46, 213, 115, 0.1); color:var(--success);">Finalizado</span>' : `
-                        <button class="btn-finish-appt" onclick="finishAppointment(${app.id})" title="Finalizar" style="background:var(--success); color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; flex:1; justify-content:center;"><i class="fas fa-check"></i> Finalizar</button>
-                        <button class="btn-cancel-appt" onclick="confirmCancelAppointment(${app.id})" title="Cancelar" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; flex:1; justify-content:center;"><i class="fas fa-ban"></i> Cancelar</button>
+                        <button class="btn-appt btn-appt-finish" onclick="finishAppointment(${app.id})" title="Finalizar"><i class="fas fa-check"></i> Finalizar</button>
+                        <button class="btn-appt btn-appt-cancel" onclick="confirmCancelAppointment(${app.id})" title="Cancelar"><i class="fas fa-ban"></i> Cancelar</button>
                     `)}
                 </div>
             </div>
@@ -429,6 +521,7 @@ function renderUpcomingAppointments() {
     document.getElementById('upcoming-appointments').innerHTML = upcoming.map(app => {
         const p = patients.find(p => p.id == app.patientId);
         const isCancelled = app.status === 'cancelled';
+        const ageCat = p ? getAgeCategory(p.age) : null;
         return `
             <div class="appointment-item ${isCancelled ? 'cancelled-item' : ''}" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1rem;">
                 <div style="display: flex; align-items: center; gap: 1rem; width: 100%;">
@@ -437,14 +530,17 @@ function renderUpcomingAppointments() {
                         <span class="time-end">${app.time}</span>
                     </div>
                     <div class="appointment-details">
-                        <div class="patient-name">${p ? p.name : 'Paciente removido'}</div>
+                        <div class="patient-name">
+                            ${p ? p.name : 'Paciente removido'}
+                            ${getAgeBadge(p ? p.age : null)}
+                        </div>
                         <div class="appointment-type">${appointmentTypes[app.type]}</div>
                     </div>
                 </div>
-                <div class="appointment-actions" style="display:flex; gap:8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05);">
+                <div class="appointment-actions">
                     ${isCancelled ? '<span class="status-badge status-cancelled">Cancelado</span>' : (app.status === 'finished' ? '<span class="status-badge status-finished" style="background:rgba(46, 213, 115, 0.1); color:var(--success);">Finalizado</span>' : `
-                        <button class="btn-finish-appt" onclick="finishAppointment(${app.id})" title="Finalizar" style="background:var(--success); color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; flex:1; justify-content:center;"><i class="fas fa-check"></i> Finalizar</button>
-                        <button class="btn-cancel-appt" onclick="confirmCancelAppointment(${app.id})" title="Cancelar" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border:1px solid var(--danger); border-radius:8px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; flex:1; justify-content:center;"><i class="fas fa-ban"></i> Cancelar</button>
+                        <button class="btn-appt btn-appt-finish" onclick="finishAppointment(${app.id})" title="Finalizar"><i class="fas fa-check"></i> Finalizar</button>
+                        <button class="btn-appt btn-appt-cancel" onclick="confirmCancelAppointment(${app.id})" title="Cancelar"><i class="fas fa-ban"></i> Cancelar</button>
                     `)}
                 </div>
             </div>
@@ -512,12 +608,14 @@ function saveAppointment() {
     const type = document.getElementById('appointmentType').value;
     const valueInput = document.getElementById('appointmentValue').value;
     const category = document.getElementById('appointmentCategory').value;
+    const payment = document.getElementById('appointmentPayment').value;
 
     if (!patientId) return showToast('Selecione um paciente', 'error');
     if (!date) return showToast('Selecione a data', 'error');
     if (!time) return showToast('Selecione um horário', 'error');
     if (!valueInput || valueInput === 'R$ 0,00') return showToast('Informe o valor da consulta', 'error');
     if (!category) return showToast('Selecione a categoria', 'error');
+    if (!payment) return showToast('Selecione a forma de pagamento', 'error');
 
     // Converte "R$ 150,00" para 150.00
     const cleanValue = valueInput.replace(/[^\d,]/g, '').replace(',', '.');
@@ -535,7 +633,7 @@ function saveAppointment() {
     }
 
     appointments.push({
-        id: appointments.length + 1,
+        id: Date.now(), // ID único baseado em timestamp
         patientId: patient.id,
         patient: patient.name,
         date,
@@ -543,6 +641,7 @@ function saveAppointment() {
         type,
         value: parseFloat(value),
         category,
+        payment,
         status: 'confirmed'
     });
 
@@ -567,6 +666,7 @@ function finishAppointment(id) {
         renderTodayAppointments();
         renderUpcomingAppointments();
         renderHistory();
+        renderReports(); // Atualiza relatórios imediatamente
         updateStats();
         showToast('Atendimento finalizado com sucesso!');
     }
@@ -624,6 +724,7 @@ function closeEditValueModal() {
 function saveNewValue() {
     const id = parseInt(document.getElementById('editValueApptId').value);
     const valueInput = document.getElementById('newAppointmentValue').value;
+    const payment = document.getElementById('editAppointmentPayment').value;
 
     const cleanValue = valueInput.replace(/[^\d,]/g, '').replace(',', '.');
     const value = parseFloat(cleanValue);
@@ -636,6 +737,7 @@ function saveNewValue() {
     const app = appointments.find(a => a.id === id);
     if (app) {
         app.value = value;
+        app.payment = payment;
         saveData();
         renderHistory();
         renderReports(); // Atualiza faturamento imediatamente se estiver na aba
@@ -821,7 +923,8 @@ function renderReports() {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     const monthlyApps = finishedApps.filter(app => {
-        const appDate = new Date(app.date);
+        // Usar T00:00:00 para evitar problemas de fuso horário
+        const appDate = new Date(app.date + 'T00:00:00');
         return appDate.getMonth() === currentMonth && appDate.getFullYear() === currentYear;
     });
     const monthlyRevenue = monthlyApps.reduce((acc, app) => acc + (app.value || 0), 0);
@@ -840,10 +943,32 @@ function renderReports() {
         atendsByCategory[cat] = 0;
     });
 
+    const revenueByPayment = {
+        dinheiro: 0,
+        pix: 0,
+        cartao: 0
+    };
+    const atendsByPayment = {
+        dinheiro: 0,
+        pix: 0,
+        cartao: 0
+    };
+
     finishedApps.forEach(app => {
         if (app.category && revenueByCategory.hasOwnProperty(app.category)) {
             revenueByCategory[app.category] += (app.value || 0);
             atendsByCategory[app.category]++;
+        }
+
+        if (app.payment === 'dinheiro') {
+            revenueByPayment.dinheiro += (app.value || 0);
+            atendsByPayment.dinheiro++;
+        } else if (app.payment === 'pix') {
+            revenueByPayment.pix += (app.value || 0);
+            atendsByPayment.pix++;
+        } else if (app.payment === 'credito' || app.payment === 'debito') {
+            revenueByPayment.cartao += (app.value || 0);
+            atendsByPayment.cartao++;
         }
     });
 
@@ -852,6 +977,23 @@ function renderReports() {
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
             <span style="font-weight: 500;">${label}</span>
             <span style="font-weight: 700; color: var(--success);">${formatCurrency(revenueByCategory[key])}</span>
+        </div>
+    `).join('');
+
+    // Renderizar Faturamento por Pagamento (Agrupado)
+    const paymentLabels = {
+        dinheiro: 'Dinheiro',
+        pix: 'Pix',
+        cartao: 'Cartão (C/D)'
+    };
+
+    document.getElementById('revenue-by-payment').innerHTML = Object.entries(paymentLabels).map(([key, label]) => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-weight: 500;">${label}</span>
+                <small style="color: var(--text-light); font-size: 0.75rem;">${atendsByPayment[key]} pessoas</small>
+            </div>
+            <span style="font-weight: 700; color: var(--success);">${formatCurrency(revenueByPayment[key])}</span>
         </div>
     `).join('');
 

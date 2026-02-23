@@ -591,6 +591,32 @@ body {
 }
 
 /* Cancelled appointment item */
+/* Age Badges */
+.age-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+    margin-top: 4px;
+}
+
+.age-child {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.age-adult {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.age-elderly {
+    background: #fdf2f8;
+    color: #be185d;
+}
+
 .cancelled-item {
     opacity: 0.65;
     background: #fff5f5 !important;
@@ -606,31 +632,60 @@ body {
     text-decoration: line-through;
 }
 
-/* Cancel button on appointment */
-.btn-cancel-appt {
+/* Appointment Actions & Buttons */
+.appointment-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+}
+
+.btn-appt {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    gap: 8px;
+    padding: 8px 16px;
     border-radius: 8px;
-    border: 1px solid #fecaca;
-    background: #fff5f5;
-    color: var(--danger);
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.8rem;
-    flex-shrink: 0;
+    white-space: nowrap;
+    min-width: 100px;
+    font-family: inherit;
 }
 
-.btn-cancel-appt:hover {
-    background: var(--danger);
-    border-color: var(--danger);
+.btn-appt:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-appt-finish {
+    background: var(--success);
     color: #fff;
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
+.btn-appt-cancel {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+
+.btn-appt-cancel:hover {
+    background: var(--danger);
+    color: #fff;
+}
+
+.btn-appt-icon {
+    min-width: 40px;
+    padding: 8px;
+}
 
 /* Modal */
 .modal-overlay {
@@ -834,8 +889,9 @@ body {
     }
 
     .form-row {
+        display: flex;
         flex-direction: column;
-        gap: 0;
+        gap: 1rem;
     }
 
     .header {
@@ -908,6 +964,12 @@ body {
     background: var(--primary);
     color: white;
     border-color: var(--primary);
+}
+
+@media (max-width: 480px) {
+    .time-slots {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 .time-slot.disabled {
