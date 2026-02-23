@@ -256,6 +256,12 @@
                         </div>
                     </div>
                     <div class="panel-card">
+                        <h3 class="panel-title" style="margin-bottom: 1.5rem;">Faturamento por Pagamento</h3>
+                        <div id="revenue-by-payment" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <!-- Dinâmico -->
+                        </div>
+                    </div>
+                    <div class="panel-card">
                         <h3 class="panel-title" style="margin-bottom: 1.5rem;">Distribuição de Atendimentos</h3>
                         <div id="atends-by-category" style="display: flex; flex-direction: column; gap: 1rem;">
                             <!-- Dinâmico -->
@@ -313,6 +319,15 @@
                                 <option value="domicilio">Domicílio</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Forma de Pagamento</label>
+                        <select class="form-select" id="appointmentPayment" required>
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">Pix</option>
+                            <option value="credito">Cartão de Crédito</option>
+                            <option value="debito">Cartão de Débito</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Horário Disponível</label>
@@ -434,6 +449,15 @@
                     <div class="form-group">
                         <label class="form-label">Novo Valor (R$)</label>
                         <input type="text" class="form-input" id="newAppointmentValue" placeholder="R$ 0,00" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Forma de Pagamento</label>
+                        <select class="form-select" id="editAppointmentPayment" required>
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">Pix</option>
+                            <option value="credito">Cartão de Crédito</option>
+                            <option value="debito">Cartão de Débito</option>
+                        </select>
                     </div>
                 </form>
             </div>

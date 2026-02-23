@@ -295,7 +295,11 @@ function renderHistory(search = '', statusFilter = 'all') {
                         </div>
                         <div class="appointment-details">
                             <div class="patient-name">${patient ? patient.name : 'Paciente removido'}</div>
-                            <div class="appointment-type">${appointmentTypes[app.type] || app.type} ${app.value ? `- <span style="color:var(--success); font-weight:700;">${formatCurrency(app.value)}</span>` : ''}</div>
+                            <div class="appointment-type">
+                                ${appointmentTypes[app.type] || app.type} 
+                                ${app.payment ? `<small style="background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:4px;">${paymentMethods[app.payment] || app.payment}</small>` : ''}
+                                ${app.value ? `- <span style="color:var(--success); font-weight:700;">${formatCurrency(app.value)}</span>` : ''}
+                            </div>
                         </div>
                     </div>
                     <div class="appointment-actions" style="display:flex; gap:8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); flex-wrap: wrap;">
@@ -604,6 +608,7 @@ function openEditValueModal(id) {
     const modal = document.getElementById('editValueModal');
     document.getElementById('editValueApptId').value = id;
     document.getElementById('newAppointmentValue').value = formatCurrency(app.value || 0);
+    document.getElementById('editAppointmentPayment').value = app.payment || 'dinheiro';
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
