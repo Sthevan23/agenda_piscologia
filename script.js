@@ -132,6 +132,10 @@ function openPatientModal(editId = null) {
             document.getElementById('patientAge').value = patient.age || '';
             document.getElementById('editPatientId').value = patient.id;
 
+            // Set gender radio
+            const genderRadio = document.querySelector(`input[name="gender"][value="${patient.gender || 'masculino'}"]`);
+            if (genderRadio) genderRadio.checked = true;
+
             // Atualizar preview de idade
             const preview = document.getElementById('age-category-preview');
             if (preview) {
@@ -184,6 +188,7 @@ function savePatient() {
     const name = document.getElementById('patientName')?.value.trim();
     const phone = document.getElementById('patientPhone')?.value.trim();
     const age = document.getElementById('patientAge')?.value;
+    const gender = document.querySelector('input[name="gender"]:checked')?.value || 'masculino';
     const editId = document.getElementById('editPatientId')?.value;
 
     if (!name || !phone) {
@@ -197,11 +202,12 @@ function savePatient() {
             patient.name = name;
             patient.phone = phone;
             patient.age = age ? parseInt(age) : null;
+            patient.gender = gender;
             showToast('Paciente atualizado!');
         }
     } else {
         const newId = patients.length ? Math.max(...patients.map(p => p.id)) + 1 : 1;
-        patients.push({ id: newId, name, phone, age: age ? parseInt(age) : null });
+        patients.push({ id: newId, name, phone, age: age ? parseInt(age) : null, gender });
         showToast('Paciente adicionado!');
     }
 
@@ -243,6 +249,20 @@ function getAgeBadge(age) {
     return `<span class="age-badge ${cat.class}" style="margin-left:8px; vertical-align:middle; display:inline-block !important;">${cat.label}</span>`;
 }
 
+function getGenderBadge(patient) {
+    if (!patient) return '';
+    let gender = patient.gender;
+    if (!gender) {
+        // Heurística simples para pacientes sem gênero definido
+        const name = patient.name.toLowerCase().trim();
+        gender = name.endsWith('a') ? 'feminino' : 'masculino';
+    }
+    const isMale = gender === 'masculino';
+    const color = isMale ? '#3498db' : '#ff6b81';
+    const icon = isMale ? 'fa-mars' : 'fa-venus';
+    return `<i class="fas ${icon}" style="color: ${color}; margin-left: 5px; font-size: 0.9em;" title="${isMale ? 'Homem' : 'Mulher'}"></i>`;
+}
+
 function renderPatientList(search = '') {
     const container = document.getElementById('patient-list');
     if (!container) return;
@@ -252,9 +272,22 @@ function renderPatientList(search = '') {
         p.phone.includes(search)
     );
 
-    container.innerHTML = filtered.map(p => `
+    container.innerHTML = filtered.map(p => {
+        let gender = p.gender;
+        if (!gender) {
+            const name = p.name.toLowerCase().trim();
+            gender = name.endsWith('a') ? 'feminino' : 'masculino';
+        }
+        const isMale = gender === 'masculino';
+        const iconColor = isMale ? '#3498db' : '#ff6b81';
+        const iconClass = isMale ? 'fa-mars' : 'fa-venus';
+        const avatarBg = isMale ? 'rgba(52, 152, 219, 0.1)' : 'rgba(255, 107, 129, 0.1)';
+
+        return `
         <div class="patient-item">
-            <div class="patient-avatar">${p.name.split(' ').map(n => n[0]).join('').substring(0, 2)}</div>
+            <div class="patient-avatar" style="background: ${avatarBg}; color: ${iconColor};">
+                <i class="fas ${iconClass}"></i>
+            </div>
             <div class="patient-info">
                 <div class="patient-name-text">
                     ${p.name} 
@@ -274,7 +307,7 @@ function renderPatientList(search = '') {
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 function renderPatientSelect() {
@@ -356,6 +389,7 @@ function renderHistory(search = '', statusFilter = 'all') {
                         <div class="appointment-details">
                             <div class="patient-name">
                                 ${patient ? patient.name : 'Paciente removido'}
+                                ${getGenderBadge(patient)}
                                 ${getAgeBadge(patient ? patient.age : null)}
                             </div>
                             <div class="appointment-type">
@@ -498,6 +532,7 @@ function renderTodayAppointments() {
                     <div class="appointment-details">
                         <div class="patient-name">
                             ${p ? p.name : 'Paciente removido'}
+                            ${getGenderBadge(p)}
                             ${getAgeBadge(p ? p.age : null)}
                         </div>
                         <div class="appointment-type">${appointmentTypes[app.type]}</div>
