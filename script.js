@@ -4,13 +4,32 @@
 // Dados globais
 // ────────────────────────────────────────────────
 
+function loadStoredJSON(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        const data = JSON.parse(raw);
+        return Array.isArray(data) ? data : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+/** Data local YYYY-MM-DD (evita erro de fuso com toISOString). */
+function toLocalDateStr(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 let currentDate = new Date();
 let selectedDate = null;
 let activeHistoryFilter = 'all'; // Filtro ativo no histórico
 
 // Carrega dados iniciais do localStorage ou inicia vazio
-let patients = JSON.parse(localStorage.getItem('fisio_patients')) || [];
-let appointments = JSON.parse(localStorage.getItem('fisio_appointments')) || [];
+let patients = loadStoredJSON('fisio_patients', []);
+let appointments = loadStoredJSON('fisio_appointments', []);
 
 const timeSlots = [
     '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
@@ -51,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPatientList();
     renderHistory();           // Novo: renderiza histórico
     generateTimeSlots();
+    updateStats();
 
     const dateInput = document.getElementById('appointmentDate');
     if (dateInput) dateInput.valueAsDate = new Date();
@@ -128,8 +148,8 @@ function openPatientModal(editId = null) {
     form.reset();
     document.getElementById('editPatientId').value = '';
 
-    if (editId) {
-        const patient = patients.find(p => p.id === editId);
+    if (editId != null && editId !== '') {
+        const patient = patients.find(p => p.id == editId);
         if (patient) {
             title.textContent = 'Editar Paciente';
             document.getElementById('patientName').value = patient.name;
@@ -359,8 +379,10 @@ function renderHistory(search = '', statusFilter = 'all') {
 
     let filtered = appointments.slice();
 
-    // Filtra por status
-    if (statusFilter !== 'all') {
+    // Filtra por status (confirmados no histórico inclui finalizados — ainda não cancelados)
+    if (statusFilter === 'confirmed') {
+        filtered = filtered.filter(app => app.status === 'confirmed' || app.status === 'finished');
+    } else if (statusFilter !== 'all') {
         filtered = filtered.filter(app => app.status === statusFilter);
     }
 
@@ -457,7 +479,7 @@ function renderCalendar() {
     // Dias do mês anterior
     for (let i = startingDay - 1; i >= 0; i--) {
         const d = new Date(year, month, -i);
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = toLocalDateStr(d);
         const dayApps = appointments.filter(a => a.date === dateStr);
         let dots = '';
         dayApps.forEach(a => dots += `<div class="appointment-dot ${a.status}"></div>`);
@@ -487,7 +509,7 @@ function renderCalendar() {
     const remaining = 42 - (startingDay + daysInMonth);
     for (let i = 1; i <= remaining; i++) {
         const d = new Date(year, month + 1, i);
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = toLocalDateStr(d);
         const dayApps = appointments.filter(a => a.date === dateStr);
         let dots = '';
         dayApps.forEach(a => dots += `<div class="appointment-dot ${a.status}"></div>`);
@@ -523,9 +545,15 @@ function selectDate(date) {
 }
 
 function renderTodayAppointments() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateStr(new Date());
     const todayApps = appointments.filter(a => a.date === today)
         .sort((a, b) => a.time.localeCompare(b.time));
+
+    const badge = document.getElementById('today-count-badge');
+    if (badge) {
+        const n = todayApps.filter(a => a.status !== 'cancelled').length;
+        badge.textContent = n === 1 ? '1 agendada' : `${n} agendadas`;
+    }
 
     document.getElementById('today-appointments').innerHTML = todayApps.map(app => {
         const p = patients.find(p => p.id == app.patientId);
@@ -559,7 +587,7 @@ function renderTodayAppointments() {
 }
 
 function renderUpcomingAppointments() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateStr(new Date());
     const upcoming = appointments.filter(a => a.date > today).slice(0, 5);
 
     document.getElementById('upcoming-appointments').innerHTML = upcoming.map(app => {
@@ -600,15 +628,18 @@ function calculateEndTime(start) {
 }
 
 function formatDate(dateStr) {
-    const d = new Date(dateStr);
-    return `${d.getDate()}/${d.getMonth() + 1}`;
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length !== 3) return dateStr;
+    const [y, m, d] = parts;
+    const dt = new Date(y, m - 1, d);
+    return `${dt.getDate()}/${dt.getMonth() + 1}`;
 }
 
 function openModal() {
-    // Definir data mínima como ontem
+    // Definir data mínima como ontem (data local)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = toLocalDateStr(yesterday);
     document.getElementById('appointmentDate').setAttribute('min', yesterdayStr);
 
     document.getElementById('appointmentModal').classList.add('active');
@@ -796,10 +827,12 @@ function saveNewValue() {
 }
 
 function updateStats() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateStr(new Date());
     const todayCount = appointments.filter(a => a.date === today && a.status !== 'cancelled').length;
-    const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    const weekStr = weekStart.toISOString().split('T')[0];
+    const weekStart = new Date();
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekStr = toLocalDateStr(weekStart);
     const weekCount = appointments.filter(a => a.date >= weekStr && a.status !== 'cancelled').length;
     const confirmed = appointments.filter(a => a.status === 'confirmed').length;
     const finished = appointments.filter(a => a.status === 'finished').length;
@@ -918,6 +951,7 @@ function formatPhone(value) {
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar) return;
     sidebar.classList.toggle('active');
     overlay?.classList.toggle('active');
 }
