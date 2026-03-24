@@ -6,6 +6,7 @@
     --bg: #f8fafc;
     --surface: #ffffff;
     --text: #1e293b;
+    --text-primary: #1e293b;
     --text-light: #64748b;
     --border: #e2e8f0;
     --success: #10b981;
@@ -25,11 +26,22 @@
     box-sizing: border-box;
 }
 
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 body {
     font-family: 'Outfit', sans-serif;
     background: var(--bg);
     color: var(--text);
     line-height: 1.6;
+    overflow-x: hidden;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    body {
+        touch-action: manipulation;
+    }
 }
 
 /* Layout */
@@ -37,6 +49,7 @@ body {
     display: grid;
     grid-template-columns: 280px 1fr;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 /* Sidebar */
@@ -123,11 +136,15 @@ body {
 
 .user-info {
     flex: 1;
+    min-width: 0;
 }
 
 .user-name {
     font-weight: 600;
     font-size: 0.875rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .user-role {
@@ -382,19 +399,34 @@ body {
     .calendar-container {
         padding: 1rem;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+        margin: 0 -0.25rem;
+        padding-left: max(1rem, 0.5rem + env(safe-area-inset-left, 0px));
+        padding-right: max(1rem, 0.5rem + env(safe-area-inset-right, 0px));
     }
 
     .calendar-grid {
-        min-width: 600px;
+        min-width: 560px;
     }
 
     .calendar-day {
-        min-height: 80px;
+        min-height: 72px;
+        padding: 0.35rem;
     }
 
     .calendar-title {
         min-width: auto;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
+    }
+
+    .calendar-header {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .calendar-header .btn {
+        min-height: 44px;
     }
 }
 
@@ -726,6 +758,14 @@ body {
     transform: scale(1) translateY(0);
 }
 
+.modal-narrow {
+    max-width: 420px;
+}
+
+.modal-narrow-sm {
+    max-width: 400px;
+}
+
 .modal-header {
     padding: 1.5rem 2rem;
     border-bottom: 1px solid var(--border);
@@ -847,6 +887,8 @@ body {
         transition: all 0.3s ease;
         box-shadow: var(--shadow-lg);
         display: flex;
+        padding-top: max(2rem, env(safe-area-inset-top, 0px));
+        padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
         /* Override display:none if any */
     }
 
@@ -867,10 +909,19 @@ body {
         display: block;
     }
 
+    .nav-link {
+        min-height: 48px;
+        padding: 0.75rem 1rem;
+    }
+
     .main-content {
         grid-column: 1;
-        padding: calc(var(--header-height) + 1rem) var(--mobile-padding) 2rem;
+        padding-top: calc(var(--header-height) + 1rem + env(safe-area-inset-top, 0px));
+        padding-right: max(var(--mobile-padding), env(safe-area-inset-right, 0px));
+        padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+        padding-left: calc(var(--mobile-padding) + 3rem + env(safe-area-inset-left, 0px));
         width: 100%;
+        max-width: 100vw;
         overflow-x: hidden;
     }
 
@@ -878,14 +929,34 @@ body {
         grid-template-columns: 1fr;
     }
 
+    .modal-overlay {
+        padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+        align-items: center;
+    }
+
     .modal {
-        width: 95%;
-        margin: 1rem;
-        padding: 1rem;
+        width: min(100%, 560px);
+        max-width: calc(100vw - 1.5rem);
+        margin: 0 auto;
+        max-height: min(88dvh, 720px);
+    }
+
+    .modal-header {
+        padding: 1.25rem 1.25rem;
     }
 
     .modal-body {
-        padding: 1rem;
+        padding: 1.25rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.25rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .modal-footer .btn {
+        min-height: 48px;
     }
 
     .form-row {
@@ -896,13 +967,40 @@ body {
 
     .header {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 1rem;
+        width: 100%;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
     }
 
     .header .btn {
         width: 100%;
         justify-content: center;
+        min-height: 48px;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header .btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 48px;
+    }
+
+    .filter-group button {
+        min-height: 44px;
+    }
+
+    .patient-list {
+        max-height: min(65dvh, 520px);
     }
 
     .reports-grid-container {
@@ -910,6 +1008,10 @@ body {
         grid-template-columns: 1fr;
         gap: 1.5rem;
         margin-top: 2rem;
+    }
+
+    .page-title h1 {
+        font-size: 1.5rem;
     }
 }
 
@@ -966,9 +1068,59 @@ body {
     border-color: var(--primary);
 }
 
+@media (max-width: 768px) {
+    .time-slot {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
 @media (max-width: 480px) {
     .time-slots {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .page-title h1 {
+        font-size: 1.35rem;
+    }
+
+    .stat-value {
+        font-size: 1.65rem;
+    }
+
+    /* Modal em formato “sheet” no fundo da tela — mais fácil de usar com o polegar */
+    .modal-overlay {
+        align-items: flex-end;
+        justify-content: stretch;
+        padding: 0;
+    }
+
+    .modal-overlay .modal {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        border-radius: 20px 20px 0 0;
+        max-height: min(92dvh, 100vh);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .modal-overlay .modal-header {
+        padding: 1rem 1.25rem;
+    }
+
+    .modal-overlay .modal-title {
+        font-size: 1.2rem;
+    }
+
+    .modal-overlay .modal-footer {
+        flex-direction: column-reverse;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    }
+
+    .modal-overlay .modal-footer .btn {
+        width: 100%;
     }
 }
 
@@ -1138,20 +1290,29 @@ body {
 .menu-toggle {
     display: none;
     position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 101;
+    top: max(1rem, env(safe-area-inset-top, 0px));
+    left: max(1rem, env(safe-area-inset-left, 0px));
+    z-index: 1002;
+    width: 48px;
+    height: 48px;
     background: var(--primary);
     color: white;
     border: none;
-    padding: 0.75rem;
+    padding: 0;
     border-radius: 12px;
     cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+}
+
+.menu-toggle i {
+    font-size: 1.15rem;
 }
 
 @media (max-width: 768px) {
     .menu-toggle {
-        display: block;
+        display: flex;
     }
 }
 
@@ -1175,6 +1336,20 @@ body {
 
 .toast.show {
     transform: translateX(0);
+}
+
+@media (max-width: 480px) {
+    .toast {
+        left: max(0.75rem, env(safe-area-inset-left, 0px));
+        right: max(0.75rem, env(safe-area-inset-right, 0px));
+        bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+        max-width: none;
+        transform: translateY(calc(100% + 3rem));
+    }
+
+    .toast.show {
+        transform: translateY(0);
+    }
 }
 
 .toast-icon {

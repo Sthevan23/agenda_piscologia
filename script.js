@@ -1,4 +1,4 @@
-// script.js - FisioAgenda completo (com CRUD pacientes + Histórico)
+// script.js - PsicoAgenda completo (com CRUD pacientes + Histórico)
 
 // ────────────────────────────────────────────────
 // Dados globais
@@ -19,11 +19,11 @@ const timeSlots = [
 ];
 
 const appointmentTypes = {
-    avaliacao: 'Avaliação Inicial',
-    sessao: 'Sessão de Fisioterapia',
+    avaliacao: 'Avaliação Psicológica',
+    sessao: 'Sessão de Psicoterapia',
     retorno: 'Retorno',
-    pilates: 'Pilates Terapêutico',
-    reabilitacao: 'Reabilitação'
+    pilates: 'Psicoterapia em Grupo',
+    reabilitacao: 'Acompanhamento Psicológico'
 };
 
 const serviceCategories = {
@@ -55,9 +55,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('appointmentDate');
     if (dateInput) dateInput.valueAsDate = new Date();
 
-    // Busca pacientes
+    // Busca pacientes na lista principal
     document.getElementById('patient-search')?.addEventListener('input', e => {
         renderPatientList(e.target.value);
+    });
+
+    // Filtra pacientes no select de agendamento
+    document.getElementById('patient-select-search')?.addEventListener('input', e => {
+        renderPatientSelect(e.target.value);
     });
 
     // Máscara de telefone
@@ -270,7 +275,7 @@ function renderPatientList(search = '') {
     const filtered = patients.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.phone.includes(search)
-    );
+    ).sort((a, b) => a.name.localeCompare(b.name));
 
     container.innerHTML = filtered.map(p => {
         let gender = p.gender;
@@ -310,12 +315,16 @@ function renderPatientList(search = '') {
     `}).join('');
 }
 
-function renderPatientSelect() {
+function renderPatientSelect(search = '') {
     const select = document.getElementById('patientSelect');
     if (!select) return;
 
+    const filtered = patients
+        .filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
     select.innerHTML = '<option value="">Selecione um paciente</option>' +
-        patients.map(p => `<option value="${p.id}">${p.name} - ${p.phone}</option>`).join('');
+        filtered.map(p => `<option value="${p.id}">${p.name} - ${p.phone}</option>`).join('');
 }
 
 // ────────────────────────────────────────────────
@@ -610,6 +619,11 @@ function closeModal() {
     document.getElementById('appointmentModal').classList.remove('active');
     document.body.style.overflow = '';
     document.getElementById('appointmentForm').reset();
+    const searchInput = document.getElementById('patient-select-search');
+    if (searchInput) {
+        searchInput.value = '';
+        renderPatientSelect();
+    }
     document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
 }
 

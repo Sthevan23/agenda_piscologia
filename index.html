@@ -3,14 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FisioAgenda - Gestão de Consultas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0891b2">
+    <title>PsicoAgenda - Gestão de Consultas</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Use o nome do seu arquivo CSS -->
-    <link rel="stylesheet" href="styles.css/index.css"> <!-- ou styles.css -->
+    <link rel="stylesheet" href="styles.css/global.css">
     <style>
         .age-badge {
             padding: 0.2rem 0.6rem;
@@ -50,8 +50,8 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="logo">
-                <i class="fas fa-heart-pulse"></i>
-                <span>FisioAgenda</span>
+                <i class="fas fa-brain"></i>
+                <span>PsicoAgenda</span>
             </div>
 
             <nav>
@@ -80,20 +80,14 @@
                             <span>Relatórios</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" onclick="showSection('settings')">
-                            <i class="fas fa-cog"></i>
-                            <span>Configurações</span>
-                        </a>
-                    </li>
                 </ul>
             </nav>
 
             <div class="user-profile">
-                <div class="user-avatar">DF</div>
+                <div class="user-avatar">HS</div>
                 <div class="user-info">
-                    <div class="user-name">Dr. Thaís</div>
-                    <div class="user-role">Fisioterapeuta</div>
+                    <div class="user-name">Harley Eduardo da Silva</div>
+                    <div class="user-role">Psicólogo Clínico</div>
                 </div>
                 <i class="fas fa-sign-out-alt" style="cursor: pointer; color: var(--text-light);"></i>
             </div>
@@ -244,7 +238,7 @@
 
             <!-- Seção Relatórios -->
             <div id="reports-section" class="section" style="display: none; width: 100%;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                <div class="section-header reports-page-header">
                     <div class="page-title">
                         <h1>Relatórios e Financeiro</h1>
                         <p>Acompanhe o faturamento e desempenho</p>
@@ -313,6 +307,12 @@
                 <form id="appointmentForm">
                     <div class="form-group">
                         <label class="form-label">Paciente</label>
+                        <div class="search-box" style="margin-bottom: 0.5rem; position: relative;">
+                            <i class="fas fa-search"
+                                style="position:absolute; left:1rem; top:50%; transform:translateY(-50%); color:var(--text-light); z-index:1;"></i>
+                            <input type="text" placeholder="Filtrar por nome..." id="patient-select-search"
+                                class="search-input" style="padding-left: 2.5rem; width: 100%;">
+                        </div>
                         <select class="form-select" id="patientSelect" required>
                             <option value="">Selecione um paciente</option>
                         </select>
@@ -325,11 +325,11 @@
                         <div class="form-group">
                             <label class="form-label">Tipo de Consulta</label>
                             <select class="form-select" id="appointmentType" required>
-                                <option value="avaliacao">Avaliação Inicial</option>
-                                <option value="sessao">Sessão de Fisioterapia</option>
+                                <option value="avaliacao">Avaliação Psicológica</option>
+                                <option value="sessao">Sessão de Psicoterapia</option>
                                 <option value="retorno">Retorno</option>
-                                <option value="pilates">Pilates Terapêutico</option>
-                                <option value="reabilitacao">Reabilitação</option>
+                                <option value="pilates">Psicoterapia em Grupo</option>
+                                <option value="reabilitacao">Acompanhamento Psicológico</option>
                             </select>
                         </div>
                     </div>
@@ -436,7 +436,7 @@
 
     <!-- Modal Cancelar Consulta -->
     <div class="modal-overlay" id="cancelModal">
-        <div class="modal" style="max-width: 420px;">
+        <div class="modal modal-narrow">
             <div class="modal-header"
                 style="background: linear-gradient(135deg, #ff4757, #c0392b); border-radius: 16px 16px 0 0;">
                 <h2 class="modal-title" style="color:#fff; display:flex; align-items:center; gap:10px;">
@@ -458,7 +458,7 @@
                 <p style="font-size:0.9rem; color:var(--text-light); margin-bottom:0.3rem;"><i
                         class="fas fa-calendar-day" style="margin-right:5px; color:#ff4757;"></i><span
                         id="cancel-appt-date">—</span></p>
-                <p style="font-size:0.9rem; color:var(--text-light);"><i class="fas fa-stethoscope"
+                <p style="font-size:0.9rem; color:var(--text-light);"><i class="fas fa-brain"
                         style="margin-right:5px; color:#ff4757;"></i><span id="cancel-appt-type">—</span></p>
                 <p
                     style="margin-top:1.2rem; font-size:0.82rem; color:#ff4757; background:rgba(255,71,87,0.08); padding:10px 14px; border-radius:8px;">
@@ -479,7 +479,7 @@
 
     <!-- Modal Editar Valor Consulta -->
     <div class="modal-overlay" id="editValueModal">
-        <div class="modal" style="max-width: 400px;">
+        <div class="modal modal-narrow-sm">
             <div class="modal-header">
                 <h2 class="modal-title">Editar Valor</h2>
                 <button class="modal-close" onclick="closeEditValueModal()">
