@@ -31,24 +31,36 @@ let activeHistoryFilter = 'all'; // Filtro ativo no histórico
 let patients = loadStoredJSON('fisio_patients', []);
 let appointments = loadStoredJSON('fisio_appointments', []);
 
-const timeSlots = [
-    '07:00', '08:00', '09:00', '10:00', '11:00',
-    '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
-    '18:00', '19:00', '20:00', '21:00'
+/** Duração de cada sessão (exibida no fim do horário). */
+const SESSION_DURATION_MINUTES = 50;
+
+/**
+ * Manhã: hora cheia das 07h às 12h (último início 12:00 → término 12:50, antes do almoço).
+ * Tarde: de 30 em 30 min “de calendário” (13:30 … 21:30), alinhado ao retorno pós-almoço.
+ */
+const timeSlotsMorning = [
+    '07:00', '08:00', '09:00', '10:00', '11:00', '12:00'
 ];
+const timeSlotsAfternoon = [
+    '13:30', '14:30', '15:30', '16:30', '17:30',
+    '18:30', '19:30', '20:30'
+];
+const timeSlots = [...timeSlotsMorning, ...timeSlotsAfternoon];
 
 const appointmentTypes = {
     avaliacao: 'Avaliação Psicológica',
-    sessao: 'Sessão de psicoterapia individual',
-    casal: 'Sessão de psicoterapia de casal',
+    individual: 'Sessão individual',
+    casal: 'Sessão de casal',
+    // Legado (agendamentos antigos no localStorage)
+    sessao: 'Sessão individual',
     pilates: 'Psicoterapia em Grupo',
     reabilitacao: 'Acompanhamento Psicológico',
-    retorno: 'Retorno' // legado (agendamentos antigos)
+    retorno: 'Retorno'
 };
 
 /** Valores de referência (R$) — preenchem o campo ao mudar o tipo */
 const defaultPricesByType = {
-    sessao: 170,
+    individual: 170,
     casal: 350
 };
 
@@ -632,7 +644,7 @@ function renderUpcomingAppointments() {
 function calculateEndTime(start) {
     const [h, m] = start.split(':').map(Number);
     const d = new Date();
-    d.setHours(h, m + 50);
+    d.setHours(h, m + SESSION_DURATION_MINUTES, 0, 0);
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
