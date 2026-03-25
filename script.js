@@ -39,10 +39,17 @@ const timeSlots = [
 
 const appointmentTypes = {
     avaliacao: 'Avaliação Psicológica',
-    sessao: 'Sessão de Psicoterapia',
-    retorno: 'Retorno',
+    sessao: 'Sessão de psicoterapia individual',
+    casal: 'Sessão de psicoterapia de casal',
     pilates: 'Psicoterapia em Grupo',
-    reabilitacao: 'Acompanhamento Psicológico'
+    reabilitacao: 'Acompanhamento Psicológico',
+    retorno: 'Retorno' // legado (agendamentos antigos)
+};
+
+/** Valores de referência (R$) — preenchem o campo ao mudar o tipo */
+const defaultPricesByType = {
+    sessao: 170,
+    casal: 350
 };
 
 const serviceCategories = {
@@ -97,6 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('newAppointmentValue')?.addEventListener('input', e => {
         e.target.value = formatCurrencyInput(e.target.value);
     });
+
+    document.getElementById('appointmentType')?.addEventListener('change', applyDefaultPriceForAppointmentType);
 
     // Classificação de idade ao vivo no modal
     document.getElementById('patientAge')?.addEventListener('input', e => {
@@ -572,7 +581,7 @@ function renderTodayAppointments() {
                             ${getGenderBadge(p)}
                             ${getAgeBadge(p ? p.age : null)}
                         </div>
-                        <div class="appointment-type">${appointmentTypes[app.type]}</div>
+                        <div class="appointment-type">${appointmentTypes[app.type] || app.type}</div>
                     </div>
                 </div>
                 <div class="appointment-actions">
@@ -606,7 +615,7 @@ function renderUpcomingAppointments() {
                             ${p ? p.name : 'Paciente removido'}
                             ${getAgeBadge(p ? p.age : null)}
                         </div>
-                        <div class="appointment-type">${appointmentTypes[app.type]}</div>
+                        <div class="appointment-type">${appointmentTypes[app.type] || app.type}</div>
                     </div>
                 </div>
                 <div class="appointment-actions">
@@ -635,6 +644,15 @@ function formatDate(dateStr) {
     return `${dt.getDate()}/${dt.getMonth() + 1}`;
 }
 
+function applyDefaultPriceForAppointmentType() {
+    const type = document.getElementById('appointmentType')?.value;
+    const input = document.getElementById('appointmentValue');
+    if (!input || !type) return;
+    const reais = defaultPricesByType[type];
+    if (reais == null) return;
+    input.value = formatCurrencyInput(String(Math.round(reais * 100)));
+}
+
 function openModal() {
     // Definir data mínima como ontem (data local)
     const yesterday = new Date();
@@ -644,6 +662,7 @@ function openModal() {
 
     document.getElementById('appointmentModal').classList.add('active');
     document.body.style.overflow = 'hidden';
+    applyDefaultPriceForAppointmentType();
 }
 
 function closeModal() {
