@@ -292,6 +292,8 @@ body {
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 0.25rem;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .stat-label {
@@ -427,6 +429,32 @@ body {
 
     .calendar-header .btn {
         min-height: 44px;
+    }
+
+    .nav-btn {
+        min-width: 44px;
+        min-height: 44px;
+        flex-shrink: 0;
+    }
+
+    .panel-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+
+    .section-card,
+    .panel-card {
+        padding: 1.15rem;
+        border-radius: 14px;
+    }
+
+    /* Evita zoom automático no foco (iOS Safari) */
+    .form-input,
+    .form-select,
+    .form-textarea,
+    .search-input {
+        font-size: 16px;
     }
 }
 
@@ -949,11 +977,14 @@ body {
 
     .sidebar {
         position: fixed;
-        left: -280px;
+        left: 0;
         top: 0;
         bottom: 0;
         z-index: 1000;
-        transition: all 0.3s ease;
+        width: min(280px, 88vw);
+        max-width: 100%;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
         box-shadow: var(--shadow-lg);
         display: flex;
         padding-top: max(2rem, env(safe-area-inset-top, 0px));
@@ -962,7 +993,7 @@ body {
     }
 
     .sidebar.active {
-        left: 0;
+        transform: translateX(0);
     }
 
     .sidebar-overlay {
@@ -990,7 +1021,7 @@ body {
         padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
         padding-left: calc(var(--mobile-padding) + 3rem + env(safe-area-inset-left, 0px));
         width: 100%;
-        max-width: 100vw;
+        max-width: 100%;
         overflow-x: hidden;
     }
 
@@ -1082,6 +1113,26 @@ body {
     .page-title h1 {
         font-size: 1.5rem;
     }
+
+    .page-title p {
+        font-size: 0.9rem;
+        line-height: 1.45;
+    }
+
+    .filter-group {
+        gap: 0.5rem;
+    }
+
+    .filter-group button {
+        flex: 1 1 auto;
+        min-width: min(100%, 140px);
+        justify-content: center;
+    }
+
+    .btn-appt {
+        min-height: 44px;
+        min-width: 44px;
+    }
 }
 
 .reports-grid-container {
@@ -1157,6 +1208,82 @@ body {
 
     .stat-value {
         font-size: 1.65rem;
+    }
+
+    /* Calendário cabe na largura sem scroll horizontal */
+    .calendar-container {
+        overflow-x: visible;
+        margin: 0;
+        padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+        padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+    }
+
+    .calendar-grid {
+        min-width: 0;
+        width: 100%;
+        gap: 0.3rem;
+    }
+
+    .calendar-day-header {
+        font-size: 0.62rem;
+        padding: 0.35rem 0.1rem;
+        letter-spacing: 0.02em;
+    }
+
+    .calendar-day {
+        min-height: 0;
+        aspect-ratio: 1;
+        padding: 0.2rem;
+    }
+
+    .calendar-day .day-number {
+        font-size: 0.78rem;
+    }
+
+    .appointment-dot {
+        height: 3px;
+    }
+
+    .calendar-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .calendar-nav {
+        justify-content: center;
+        width: 100%;
+        order: 0;
+    }
+
+    .calendar-header .btn.btn-secondary {
+        width: 100%;
+        justify-content: center;
+        order: 1;
+    }
+
+    .main-content {
+        padding-left: calc(0.75rem + 3rem + env(safe-area-inset-left, 0px));
+        padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+    }
+
+    .stat-card {
+        padding: 1.15rem;
+    }
+
+    .filter-group {
+        flex-direction: column;
+    }
+
+    .filter-group button {
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+    }
+
+    .btn-appt {
+        flex: 1 1 100%;
+        min-width: 100%;
+        justify-content: center;
     }
 
     /* Modal em formato “sheet” no fundo da tela — mais fácil de usar com o polegar */
@@ -1373,6 +1500,8 @@ body {
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .menu-toggle i {
